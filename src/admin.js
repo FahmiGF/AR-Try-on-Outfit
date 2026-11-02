@@ -2,6 +2,8 @@ import { CATEGORIES, SIZES, createProductDraft, formatIDR, isLowStock, totalStoc
 import { GARMENT_TYPES, garmentDataUrl } from './garments.js';
 import { computeDashboard, dayKey, lastNDays } from './analytics.js';
 import { browserStorage, createStore, STORAGE_KEY } from './store.js';
+import { orderItemCount, orderStatusLabel, orderStatusStyle } from './orders.js';
+import { ordersToCSV, productsToCSV } from './csv.js';
 
 const $ = (id) => document.getElementById(id);
 const ADMIN_PIN = '2468';
@@ -22,6 +24,8 @@ const ui = {
   productQuery: '',
   productCategory: 'all',
   editingId: null,
+  chartRange: 7,
+  detailOrderId: null,
 };
 
 /* ------------------------------------------------------------------ */
@@ -152,7 +156,9 @@ function drawLineChart(canvas, labels, series) {
   }
 
   ctx.textAlign = 'center';
+  const labelEvery = Math.max(1, Math.ceil(labels.length / 8));
   labels.forEach((label, i) => {
+    if (i % labelEvery !== 0 && i !== labels.length - 1) return;
     const x = pad.left + (plotW / Math.max(1, labels.length - 1)) * i;
     ctx.fillText(label, x, height - 10);
   });
@@ -217,13 +223,21 @@ function modeSeries(tryons, mode, days = 7) {
   return { labels: buckets.map((b) => b.label), values: buckets.map((b) => index.get(b.key)) };
 }
 
+function syncRangeButtons() {
+  document.querySelectorAll('.range-switch').forEach((group) => {
+    group.querySelectorAll('[data-range]').forEach((btn) => {
+      btn.classList.toggle('active', Number(btn.dataset.range) === ui.chartRange);
+    });
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /* Overview                                                            */
 /* ------------------------------------------------------------------ */
 
 function renderOverview() {
   const s = store.getState();
-  const dash = computeDashboard(s.products, s.orders, s.tryons);
+  const dash = computeDashboard(s.products, s.orders, s.tryons, Date.now(), ui.chartRange);
 
   $('kpiRevenue').textContent = formatIDR(dash.revenue);
   $('kpiRevenueSub').textContent = `Hari ini ${formatIDR(dash.revenueToday)} · AOV ${formatIDR(Math.round(dash.averageOrderValue))}`;
@@ -241,6 +255,7 @@ function renderOverview() {
     { name: 'Try-on', color: '#c8102e', values: dash.tryOnSeries.map((b) => b.value), fill: true },
     { name: 'Pesanan', color: '#e8b04b', values: orders },
   ]);
+  syncRangeButtons();
 
   renderStatusList(dash.status);
   renderTopProducts($('topProducts'), dash.topProducts);
@@ -531,7 +546,7 @@ function renderOrders() {
       const first = order.items[0];
       return `
         <tr>
-          <td><b>${esc(order.id)}</b><div class="cell-sub">${esc(order.channel || 'Web')}</div></td>
+          <td><button class="link-btn" data-detail="${esc(order.id)}"><b>${esc(order.id)}</b></button><div class="cell-sub">${esc(order.channel || 'Web')}</div></td>
           <td><div class="cell-name">${esc(order.customer)}</div><div class="cell-sub">${esc(order.city || '-')}</div></td>
           <td>
             <div class="cell-name">${esc(first?.name || '-')}</div>
@@ -562,19 +577,120 @@ function statusColor(status) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Order detail & export                                               */
+/* ------------------------------------------------------------------ */
+
+function openOrderDetail(orderId) {
+  const order = store.getOrders().find((o) => o.id === orderId);
+  if (!order) return;
+  ui.detailOrderId = orderId;
+  const style = orderStatusStyle(order.status);
+  const items = (order.items || [])
+    .map(
+      (item) => `
+      <div class="detail-item">
+        <span class="tp-media"><img src="${garmentDataUrl(item.type, item.colorHex)}" alt="" /></span>
+        <div class="detail-item-info">
+          <div class="cell-name">${esc(item.name)}</div>
+          <div class="cell-sub">Ukuran ${esc(item.size)} · ${esc(item.color)} · ${formatIDR(item.price)} ×${item.qty}</div>
+        </div>
+        <b>${formatIDR(Number(item.price || 0) * Number(item.qty || 0))}</b>
+      </div>`,
+    )
+    .join('');
+
+  $('orderDetailBody').innerHTML = `
+    <div class="detail-head-row">
+      <div>
+        <div class="detail-order-id">${esc(order.id)}</div>
+        <div class="cell-sub">${fmtTime(order.createdAt)} · ${orderItemCount(order)} item · ${esc(order.channel || 'Web')}</div>
+      </div>
+      <span class="detail-badge" style="color:${style.color};background:${style.bg}">${esc(orderStatusLabel(order.status))}</span>
+    </div>
+
+    <div class="detail-meta">
+      <div><span>Pelanggan</span><b>${esc(order.customer)}</b></div>
+      <div><span>Kota</span><b>${esc(order.city || '-')}</b></div>
+      <div><span>Promo</span><b>${esc(order.promoLabel || order.promo || 'Tidak ada')}</b></div>
+    </div>
+
+    <div class="detail-items">${items}</div>
+
+    <div class="detail-totals">
+      <div><span>Subtotal</span><span>${formatIDR(Number(order.subtotal ?? order.total ?? 0))}</span></div>
+      ${Number(order.discount || 0) > 0 ? `<div><span>Diskon</span><span>-${formatIDR(Number(order.discount))}</span></div>` : ''}
+      <div><span>Ongkir</span><span>${Number(order.shipping || 0) === 0 ? 'Gratis' : formatIDR(Number(order.shipping))}</span></div>
+      <div class="grand"><span>Total</span><b>${formatIDR(Number(order.total || 0))}</b></div>
+    </div>
+
+    <label class="detail-status">Ubah status
+      <select data-detail-status="${esc(order.id)}">
+        ${Object.entries(STATUS_LABELS)
+          .map(([value, label]) => `<option value="${value}"${order.status === value ? ' selected' : ''}>${label}</option>`)
+          .join('')}
+      </select>
+    </label>`;
+
+  $('orderDetail').classList.add('open');
+  $('orderDetail').setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOrderDetail() {
+  $('orderDetail').classList.remove('open');
+  $('orderDetail').setAttribute('aria-hidden', 'true');
+  if (!$('productEditor').classList.contains('open')) document.body.style.overflow = '';
+}
+
+function downloadCSV(filename, content) {
+  const blob = new Blob([`\ufeff${content}`], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportOrdersCSV() {
+  const orders = store.getOrders();
+  if (!orders.length) {
+    toast('Belum ada pesanan untuk diekspor.', 'error');
+    return;
+  }
+  const stamp = new Date().toISOString().slice(0, 10);
+  downloadCSV(`matahari-pesanan-${stamp}.csv`, ordersToCSV(orders));
+  toast(`${orders.length} pesanan diekspor ke CSV.`);
+}
+
+function exportProductsCSV() {
+  const products = store.getProducts();
+  if (!products.length) {
+    toast('Belum ada produk untuk diekspor.', 'error');
+    return;
+  }
+  const stamp = new Date().toISOString().slice(0, 10);
+  downloadCSV(`matahari-produk-${stamp}.csv`, productsToCSV(products));
+  toast(`${products.length} produk diekspor ke CSV.`);
+}
+
+/* ------------------------------------------------------------------ */
 /* Try-on view                                                         */
 /* ------------------------------------------------------------------ */
 
 function renderTryOnView() {
   const s = store.getState();
-  const dash = computeDashboard(s.products, s.orders, s.tryons);
+  const dash = computeDashboard(s.products, s.orders, s.tryons, Date.now(), ui.chartRange);
 
-  const ar = modeSeries(s.tryons, 'ar');
-  const mannequin = modeSeries(s.tryons, 'mannequin');
+  const ar = modeSeries(s.tryons, 'ar', ui.chartRange);
+  const mannequin = modeSeries(s.tryons, 'mannequin', ui.chartRange);
   drawLineChart($('tryonChartLarge'), ar.labels, [
     { name: 'AR', color: '#c8102e', values: ar.values, fill: true },
     { name: 'Mannequin', color: '#e8b04b', values: mannequin.values },
   ]);
+  syncRangeButtons();
 
   renderTopProducts($('topProductsLarge'), dash.topProducts);
 
@@ -689,6 +805,12 @@ function bindEvents() {
     renderOrders();
   });
 
+  $('ordersTable').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-detail]');
+    if (!btn) return;
+    openOrderDetail(btn.dataset.detail);
+  });
+
   $('ordersTable').addEventListener('change', (e) => {
     const select = e.target.closest('[data-order]');
     if (!select) return;
@@ -697,6 +819,40 @@ function bindEvents() {
     renderOrders();
     renderOverview();
     toast(`Status ${select.dataset.order} → ${STATUS_LABELS[select.value]}.`);
+  });
+
+  $('orderDetailBody').addEventListener('change', (e) => {
+    const select = e.target.closest('[data-detail-status]');
+    if (!select) return;
+    const orderId = select.dataset.detailStatus;
+    store.updateOrderStatus(orderId, select.value);
+    renderOrders();
+    renderOverview();
+    if (ui.detailOrderId) openOrderDetail(orderId);
+    toast(`Status ${orderId} → ${STATUS_LABELS[select.value]}.`);
+  });
+
+  $('exportOrders').addEventListener('click', exportOrdersCSV);
+  $('exportProducts').addEventListener('click', exportProductsCSV);
+
+  document.querySelectorAll('.range-switch').forEach((group) => {
+    group.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-range]');
+      if (!btn) return;
+      ui.chartRange = Number(btn.dataset.range) || 7;
+      syncRangeButtons();
+      if (ui.view === 'tryon') renderTryOnView();
+      else renderOverview();
+    });
+  });
+
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (ui.view === 'overview') renderOverview();
+      if (ui.view === 'tryon') renderTryOnView();
+    }, 180);
   });
 
   $('resetDemo').addEventListener('click', () => {
@@ -718,12 +874,16 @@ function bindEvents() {
   document.querySelectorAll('[data-close]').forEach((el) => {
     el.addEventListener('click', (e) => {
       e.preventDefault();
-      closeEditor();
+      if (el.dataset.close === 'orderDetail') closeOrderDetail();
+      else closeEditor();
     });
   });
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeEditor();
+    if (e.key === 'Escape') {
+      if ($('orderDetail').classList.contains('open')) closeOrderDetail();
+      closeEditor();
+    }
   });
 
   window.addEventListener('storage', (e) => {
@@ -763,11 +923,14 @@ function boot() {
     store,
     enterDashboard,
     openEditor,
+    openOrderDetail,
+    exportOrdersCSV,
+    exportProductsCSV,
     switchView,
     ui,
     get dash() {
       const s = store.getState();
-      return computeDashboard(s.products, s.orders, s.tryons);
+      return computeDashboard(s.products, s.orders, s.tryons, Date.now(), ui.chartRange);
     },
   };
 }

@@ -4,7 +4,7 @@
  */
 
 import { SEED_PRODUCTS } from './catalog.js';
-import { emptyCart } from './cart.js';
+import { emptyCart, summarizeCart } from './cart.js';
 
 export const STORAGE_KEY = 'matahari-ar-tryon:v1';
 export const STORE_EVENT = 'matahari:store-change';
@@ -67,6 +67,7 @@ export function createSeedState(now = Date.now()) {
     tryons: seedTryons(now),
     cart: emptyCart(),
     promo: '',
+    wishlist: [],
     orderSeq: 1042,
   };
 }
@@ -84,7 +85,15 @@ export function createStore(storage, { now = Date.now, seed = true } = {}) {
       const raw = storage?.getItem?.(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.products) && Array.isArray(parsed.orders)) return parsed;
+        if (parsed && Array.isArray(parsed.products) && Array.isArray(parsed.orders)) {
+          return {
+            ...parsed,
+            tryons: Array.isArray(parsed.tryons) ? parsed.tryons : [],
+            wishlist: Array.isArray(parsed.wishlist) ? parsed.wishlist : [],
+            cart: parsed.cart && Array.isArray(parsed.cart.items) ? parsed.cart : emptyCart(),
+            promo: typeof parsed.promo === 'string' ? parsed.promo : '',
+          };
+        }
       }
     } catch {
       /* corrupt storage -> reseed */
@@ -120,6 +129,7 @@ export function createStore(storage, { now = Date.now, seed = true } = {}) {
     getOrders: () => state.orders.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
     getTryons: () => state.tryons,
     getCart: () => state.cart,
+    getWishlist: () => state.wishlist || [],
     subscribe(fn) {
       listeners.add(fn);
       return () => listeners.delete(fn);
@@ -135,6 +145,19 @@ export function createStore(storage, { now = Date.now, seed = true } = {}) {
       persist();
     },
 
+    toggleWishlist(productId) {
+      const current = state.wishlist || [];
+      const exists = current.includes(productId);
+      const wishlist = exists ? current.filter((id) => id !== productId) : [productId, ...current];
+      state = { ...state, wishlist };
+      persist();
+      return { wishlisted: !exists, wishlist };
+    },
+
+    isWishlisted(productId) {
+      return (state.wishlist || []).includes(productId);
+    },
+
     recordTryOn(productId, mode = 'ar') {
       const entry = { id: `TRY-${Date.now().toString(36)}`, productId, mode, ts: new Date(now()).toISOString() };
       state = { ...state, tryons: [...state.tryons, entry] };
@@ -145,7 +168,7 @@ export function createStore(storage, { now = Date.now, seed = true } = {}) {
     checkout({ customer = 'Pelanggan Matahari', city = 'Jakarta', items = [], promo = '' } = {}) {
       if (!items.length) throw new Error('Keranjang kosong');
       const nextSeq = (state.orderSeq || 1042) + 1;
-      const subtotal = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 0), 0);
+      const summary = summarizeCart({ items }, promo);
       const order = {
         id: `ORD-${nextSeq}`,
         createdAt: new Date(now()).toISOString(),
@@ -153,9 +176,12 @@ export function createStore(storage, { now = Date.now, seed = true } = {}) {
         customer,
         city,
         items: items.map((i) => ({ ...i })),
-        subtotal,
-        total: subtotal,
+        subtotal: summary.subtotal,
+        discount: summary.discount,
+        shipping: summary.shipping,
+        total: summary.total,
         promo: promo || '',
+        promoLabel: summary.promo?.label || '',
         channel: 'Web',
       };
 

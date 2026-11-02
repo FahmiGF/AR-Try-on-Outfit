@@ -7,6 +7,7 @@ import {
   cartCount,
   cartSubtotal,
   emptyCart,
+  maxQtyFor,
   removeFromCart,
   setQty,
   summarizeCart,
@@ -96,4 +97,38 @@ test('cartSubtotal handles multiple lines', () => {
   let cart = addToCart(emptyCart(), product, { size: 'S', color: 'Hitam', qty: 2 });
   cart = addToCart(cart, product, { size: 'M', color: 'Hitam', qty: 1 });
   assert.equal(cartSubtotal(cart), 300000);
+});
+
+test('addToCart ignores sizes with zero stock', () => {
+  const cart = addToCart(emptyCart(), product, { size: 'L', color: 'Hitam' });
+  assert.equal(cart.items.length, 0);
+});
+
+test('stock is shared between colors on the same size', () => {
+  let cart = addToCart(emptyCart(), product, { size: 'S', color: 'Hitam', qty: 4 });
+  cart = addToCart(cart, product, { size: 'S', color: 'Putih', qty: 4 });
+  assert.equal(cart.items.length, 2);
+  assert.equal(cart.items[0].qty, 4);
+  assert.equal(cart.items[1].qty, 1);
+  assert.equal(maxQtyFor(cart, cart.items[1].key), 1);
+});
+
+test('setQty clamps increases to stock but always allows decreases', () => {
+  let cart = addToCart(emptyCart(), product, { size: 'S', color: 'Hitam', qty: 2 });
+  const key = cart.items[0].key;
+  cart = setQty(cart, key, 99);
+  assert.equal(cart.items[0].qty, 5);
+  cart = setQty(cart, key, 1);
+  assert.equal(cart.items[0].qty, 1);
+  assert.equal(maxQtyFor(cart, key), 5);
+});
+
+test('maxQtyFor returns Infinity for legacy items without available stock', () => {
+  const cart = {
+    ...emptyCart(),
+    items: [{ key: 'p9|M|Hitam', productId: 'p9', size: 'M', color: 'Hitam', qty: 2, price: 1000 }],
+  };
+  assert.equal(maxQtyFor(cart, 'p9|M|Hitam'), Infinity);
+  const next = setQty(cart, 'p9|M|Hitam', 20);
+  assert.equal(next.items[0].qty, 20);
 });

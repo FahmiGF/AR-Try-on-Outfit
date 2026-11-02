@@ -150,3 +150,48 @@ test('resetDemo restores the seed state', () => {
   store.resetDemo();
   assert.equal(store.getProducts().length, 8);
 });
+
+test('checkout stores correct discount, shipping and total', () => {
+  const store = createStore(fakeStorage(), { now: () => NOW });
+  const product = store.getProduct('mt-001');
+  const cart = addToCart(emptyCart(), product, { size: 'M', color: product.colors[0].name, qty: 2 });
+  const order = store.checkout({ customer: 'Uji', items: cart.items, promo: 'HEMAT50' });
+  assert.equal(order.subtotal, 158000);
+  assert.equal(order.discount, 50000);
+  assert.equal(order.shipping, 20000);
+  assert.equal(order.total, 128000);
+  assert.equal(order.promoLabel, 'Potongan Rp50.000');
+});
+
+test('wishlist toggles and persists', () => {
+  const storage = fakeStorage();
+  const store = createStore(storage, { now: () => NOW });
+  assert.deepEqual(store.getWishlist(), []);
+  assert.equal(store.isWishlisted('mt-001'), false);
+
+  const first = store.toggleWishlist('mt-001');
+  assert.equal(first.wishlisted, true);
+  assert.equal(store.isWishlisted('mt-001'), true);
+  assert.deepEqual(store.getWishlist(), ['mt-001']);
+
+  store.toggleWishlist('mt-002');
+  assert.deepEqual(store.getWishlist(), ['mt-002', 'mt-001']);
+
+  store.toggleWishlist('mt-001');
+  assert.deepEqual(store.getWishlist(), ['mt-002']);
+
+  const reloaded = createStore(storage, { now: () => NOW });
+  assert.deepEqual(reloaded.getWishlist(), ['mt-002']);
+});
+
+test('stored state missing wishlist/tryons is normalized on read', () => {
+  const storage = fakeStorage();
+  storage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ products: createSeedState(NOW).products, orders: createSeedState(NOW).orders }),
+  );
+  const store = createStore(storage, { now: () => NOW });
+  assert.deepEqual(store.getWishlist(), []);
+  assert.deepEqual(store.getTryons(), []);
+  assert.deepEqual(store.getCart(), emptyCart());
+});

@@ -3,7 +3,7 @@ import { garmentDataUrl } from './garments.js';
 import {
   addToCart,
   cartCount,
-  emptyCart,
+  maxQtyFor,
   removeFromCart,
   setQty,
   summarizeCart,
@@ -12,6 +12,13 @@ import { computeDashboard } from './analytics.js';
 import { browserStorage, createStore, STORAGE_KEY } from './store.js';
 import { recommendSize, sizeConfidence } from './sizing.js';
 import { TryOnAR, loadGarmentImage } from './ar.js';
+import {
+  formatOrderDate,
+  orderItemCount,
+  orderProgress,
+  orderStatusLabel,
+  orderStatusStyle,
+} from './orders.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -19,6 +26,7 @@ const store = createStore(browserStorage());
 
 const state = {
   filters: { category: 'all', query: '', sort: 'popular' },
+  wishOnly: false,
   product: null,
   color: null,
   size: null,
@@ -26,6 +34,7 @@ const state = {
   arProduct: null,
   arColor: null,
   arSize: null,
+  lastOrderId: null,
 };
 
 let ar = null;
@@ -88,6 +97,13 @@ function closeModal(id) {
   }
 }
 
+function closeMobileMenu() {
+  const menu = $('mobileMenu');
+  if (!menu) return;
+  menu.hidden = true;
+  $('navToggle')?.setAttribute('aria-expanded', 'false');
+}
+
 /* ------------------------------------------------------------------ */
 /* Catalog                                                             */
 /* ------------------------------------------------------------------ */
@@ -103,6 +119,7 @@ function renderCategories() {
 function productCard(product) {
   const discount = discountPercent(product);
   const stock = totalStock(product);
+  const wished = store.isWishlisted(product.id);
   const badge = product.badge
     ? `<span class="pc-badge${product.badge === 'Best Seller' || product.badge === 'Favorit' ? '' : ' gold'}">${esc(product.badge)}</span>`
     : '';
@@ -116,6 +133,9 @@ function productCard(product) {
       <div class="pc-media" data-action="detail">
         ${badge}
         <span class="pc-ar-tag">✦ AR</span>
+        <button class="pc-wish${wished ? ' active' : ''}" type="button" data-action="wish" data-id="${product.id}" aria-label="${wished ? 'Hapus dari' : 'Simpan ke'} favorit" aria-pressed="${wished}">
+          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.4-7 10-7 10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </button>
         <img src="${garmentDataUrl(product.type, product.colors[0]?.hex)}" alt="${esc(product.name)}" />
       </div>
       <div class="pc-body">
@@ -141,10 +161,49 @@ function productCard(product) {
 }
 
 function renderProducts() {
-  const products = filterProducts(store.getProducts(), state.filters);
+  let products = filterProducts(store.getProducts(), state.filters);
+  if (state.wishOnly) products = products.filter((p) => store.isWishlisted(p.id));
+
   $('productGrid').innerHTML = products.map(productCard).join('');
-  $('emptyState').hidden = products.length > 0;
-  $('productGrid').hidden = products.length === 0;
+  const empty = products.length === 0;
+  $('emptyState').hidden = !empty;
+  $('productGrid').hidden = empty;
+
+  if (empty) {
+    $('emptyEmoji').textContent = state.wishOnly ? '♡' : '🔍';
+    $('emptyTitle').textContent = state.wishOnly ? 'Belum ada favorit' : 'Produk tidak ditemukan';
+    $('emptyText').textContent = state.wishOnly
+      ? 'Tekan ikon hati pada produk untuk menyimpannya di sini.'
+      : 'Coba kata kunci lain atau pilih kategori “Semua”.';
+    $('resetFilters').textContent = state.wishOnly ? 'Lihat semua produk' : 'Reset filter';
+  }
+}
+
+function refreshWishUI() {
+  const wished = store.getWishlist();
+  const count = wished.length;
+
+  $('wishCount').textContent = count;
+  $('wishCount').hidden = count === 0;
+  $('wishButton').classList.toggle('active', state.wishOnly);
+  $('wishButton').setAttribute('aria-pressed', String(state.wishOnly));
+  $('wishFilterCount').textContent = count;
+  $('wishFilter').classList.toggle('active', state.wishOnly);
+  $('wishFilter').setAttribute('aria-pressed', String(state.wishOnly));
+
+  if ($('pmWish')) {
+    const active = state.product ? store.isWishlisted(state.product.id) : false;
+    $('pmWish').classList.toggle('active', active);
+    $('pmWish').setAttribute('aria-pressed', String(active));
+    $('pmWish').setAttribute('aria-label', active ? 'Hapus dari favorit' : 'Simpan ke favorit');
+  }
+}
+
+function setWishOnly(value) {
+  state.wishOnly = value;
+  refreshWishUI();
+  renderProducts();
+  if (value) $('katalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ------------------------------------------------------------------ */
@@ -200,6 +259,8 @@ function renderProductModal() {
       return `<button class="size-btn${size === state.size ? ' active' : ''}" data-size="${size}" ${qty <= 0 ? 'disabled' : ''}>${size}${qty > 0 ? '' : ' · habis'}</button>`;
     })
     .join('');
+
+  refreshWishUI();
 }
 
 function openProduct(id) {
@@ -331,6 +392,8 @@ async function switchArMode(mode) {
 /* ------------------------------------------------------------------ */
 
 function cartItemHTML(item) {
+  const max = maxQtyFor(store.getCart(), item.key);
+  const atMax = Number.isFinite(max) && item.qty >= max;
   return `
     <div class="cart-item" data-key="${esc(item.key)}">
       <div class="ci-media"><img src="${garmentDataUrl(item.type, item.colorHex)}" alt="${esc(item.name)}" /></div>
@@ -339,12 +402,12 @@ function cartItemHTML(item) {
           <div class="ci-name">${esc(item.name)}</div>
           <button class="ci-remove" data-remove="${esc(item.key)}" aria-label="Hapus">✕</button>
         </div>
-        <div class="ci-meta">Ukuran ${esc(item.size)} · ${esc(item.color)}</div>
+        <div class="ci-meta">Ukuran ${esc(item.size)} · ${esc(item.color)}${atMax ? ' · stok maks' : ''}</div>
         <div class="ci-bottom">
           <div class="qty">
             <button data-qty="-1" data-key="${esc(item.key)}" aria-label="Kurangi">−</button>
             <span>${item.qty}</span>
-            <button data-qty="1" data-key="${esc(item.key)}" aria-label="Tambah">+</button>
+            <button data-qty="1" data-key="${esc(item.key)}" aria-label="Tambah" ${atMax ? 'disabled' : ''}>+</button>
           </div>
           <div class="ci-price">${formatIDR(item.price * item.qty)}</div>
         </div>
@@ -394,6 +457,85 @@ function updateCart(cart) {
   store.setCart(cart);
   renderCart();
   refreshStats();
+  refreshWishUI();
+}
+
+/* ------------------------------------------------------------------ */
+/* Customer orders                                                     */
+/* ------------------------------------------------------------------ */
+
+function orderCardHTML(order) {
+  const style = orderStatusStyle(order.status);
+  const steps = orderProgress(order.status);
+  const progress = steps
+    .map(
+      (step) =>
+        `<div class="order-step${step.done ? ' done' : ''}${step.current ? ' current' : ''}"><i></i>${esc(step.label)}</div>`,
+    )
+    .join('');
+  const items = (order.items || [])
+    .map(
+      (item) => `
+      <div class="order-item">
+        <div class="order-item-media"><img src="${garmentDataUrl(item.type, item.colorHex)}" alt="" /></div>
+        <div class="order-item-name">${esc(item.name)}<small>Ukuran ${esc(item.size)} · ${esc(item.color)} ×${item.qty}</small></div>
+        <div class="order-item-price">${formatIDR(Number(item.price || 0) * Number(item.qty || 0))}</div>
+      </div>`,
+    )
+    .join('');
+
+  const cancelled =
+    order.status === 'cancelled' || order.status === 'refunded'
+      ? '<div class="order-cancelled">Pesanan ini dibatalkan. Hubungi CS bila butuh bantuan.</div>'
+      : '';
+
+  return `
+    <article class="order-card" data-order="${esc(order.id)}">
+      <div class="order-top">
+        <div>
+          <div class="order-id">${esc(order.id)}</div>
+          <div class="order-date">${formatOrderDate(order.createdAt, true)} · ${orderItemCount(order)} item</div>
+        </div>
+        <span class="order-badge" style="color:${style.color};background:${style.bg}">${esc(orderStatusLabel(order.status))}</span>
+      </div>
+      ${
+        order.status === 'cancelled' || order.status === 'refunded'
+          ? cancelled
+          : `<div class="order-progress">${progress}</div>`
+      }
+      <div class="order-items">${items}</div>
+      <div class="order-totals">
+        <div class="order-total-row"><span>Subtotal</span><span>${formatIDR(Number(order.subtotal ?? order.total ?? 0))}</span></div>
+        ${Number(order.discount || 0) > 0 ? `<div class="order-total-row"><span>Diskon promo</span><span>-${formatIDR(Number(order.discount))}</span></div>` : ''}
+        <div class="order-total-row"><span>Ongkir</span><span>${Number(order.shipping || 0) === 0 ? 'Gratis' : formatIDR(Number(order.shipping))}</span></div>
+        <div class="order-total-row grand"><span>Total</span><b>${formatIDR(Number(order.total || 0))}</b></div>
+      </div>
+      <div class="order-card-foot">
+        <span class="order-hint">${order.city ? `Dikirim ke ${esc(order.city)}` : 'Pesanan web'}${order.promoLabel ? ` · ${esc(order.promoLabel)}` : ''}</span>
+        <button class="btn btn-ghost" data-reorder="${esc(order.id)}">Beli lagi</button>
+      </div>
+    </article>`;
+}
+
+function renderOrders() {
+  const orders = [...store.getOrders()].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+  $('ordersList').innerHTML = orders.map(orderCardHTML).join('');
+  $('ordersList').hidden = orders.length === 0;
+  $('ordersEmpty').hidden = orders.length > 0;
+}
+
+function openOrders() {
+  renderOrders();
+  openModal('ordersModal');
+}
+
+function showSuccess(order) {
+  state.lastOrderId = order?.id || null;
+  $('successOrderId').textContent = order?.id || 'ORD-0000';
+  $('successCopy').textContent = `Terima kasih${order?.customer ? `, ${order.customer}` : ''}! Pesananmu sedang kami siapkan.`;
+  openModal('successModal');
 }
 
 /* ------------------------------------------------------------------ */
@@ -437,9 +579,11 @@ function bindEvents() {
 
   $('resetFilters').addEventListener('click', () => {
     state.filters = { category: 'all', query: '', sort: 'popular' };
+    state.wishOnly = false;
     $('searchInput').value = '';
     $('sortSelect').value = 'popular';
     renderCategories();
+    refreshWishUI();
     renderProducts();
   });
 
@@ -450,7 +594,14 @@ function bindEvents() {
     if (!product) return;
     const action = e.target.closest('[data-action]')?.dataset.action;
 
-    if (action === 'tryon') {
+    if (action === 'wish') {
+      e.stopPropagation();
+      const { wishlisted } = store.toggleWishlist(product.id);
+      refreshWishUI();
+      renderProducts();
+      renderProductModal();
+      toast(wishlisted ? `${product.name} disimpan ke favorit.` : `${product.name} dihapus dari favorit.`);
+    } else if (action === 'tryon') {
       openTryOn(product.id);
     } else if (action === 'add') {
       const size = firstAvailableSize(product);
@@ -460,6 +611,62 @@ function bindEvents() {
     } else {
       openProduct(product.id);
     }
+  });
+
+  $('wishButton').addEventListener('click', () => setWishOnly(!state.wishOnly));
+  $('wishFilter').addEventListener('click', () => setWishOnly(!state.wishOnly));
+  $('mobileWish').addEventListener('click', () => {
+    closeMobileMenu();
+    setWishOnly(true);
+  });
+  $('mobileOrders').addEventListener('click', () => {
+    closeMobileMenu();
+    openOrders();
+  });
+
+  $('pmWish').addEventListener('click', () => {
+    const p = state.product;
+    if (!p) return;
+    const { wishlisted } = store.toggleWishlist(p.id);
+    refreshWishUI();
+    renderProducts();
+    toast(wishlisted ? `${p.name} disimpan ke favorit.` : `${p.name} dihapus dari favorit.`);
+  });
+
+  // Customer orders & checkout success
+  $('ordersButton').addEventListener('click', openOrders);
+  $('ordersList').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-reorder]');
+    if (!btn) return;
+    const order = store.getOrders().find((o) => o.id === btn.dataset.reorder);
+    if (!order) return;
+    let added = 0;
+    let cart = store.getCart();
+    for (const item of order.items || []) {
+      const product = store.getProduct(item.productId);
+      if (!product) continue;
+      cart = addToCart(cart, product, { size: item.size, color: item.color, qty: item.qty });
+      added += 1;
+    }
+    updateCart(cart);
+    closeModal('ordersModal');
+    openCart();
+    toast(added ? `${added} item dimasukkan lagi ke keranjang.` : 'Produk sudah tidak tersedia.', added ? 'success' : 'error');
+  });
+  $('successTrack').addEventListener('click', () => {
+    closeModal('successModal');
+    openOrders();
+  });
+
+  // Mobile navigation
+  $('navToggle').addEventListener('click', () => {
+    const menu = $('mobileMenu');
+    const open = menu.hidden;
+    menu.hidden = !open;
+    $('navToggle').setAttribute('aria-expanded', String(open));
+  });
+  document.querySelectorAll('.mobile-link[href^="#"]').forEach((link) => {
+    link.addEventListener('click', closeMobileMenu);
   });
 
   // Product modal
@@ -572,6 +779,29 @@ function bindEvents() {
     openModal('shotModal');
   });
 
+  $('arFlip').addEventListener('click', async () => {
+    if (!ar?.stream) {
+      toast('Nyalakan mode Kamera AR dulu untuk mengganti kamera.', 'error');
+      return;
+    }
+    $('arStatus').textContent = 'Mengganti kamera…';
+    await ar.flipCamera();
+    updateArModeUI();
+  });
+
+  $('arReset').addEventListener('click', () => {
+    $('arScale').value = '1';
+    $('arOffset').value = '0';
+    $('arOpacity').value = '1';
+    $('arScaleVal').textContent = '1.00×';
+    $('arOffsetVal').textContent = '0%';
+    $('arOpacityVal').textContent = '100%';
+    ar?.setScale(1);
+    ar?.setOffsetY(0);
+    ar?.setOpacity(1);
+    toast('Tampilan AR direset.');
+  });
+
   $('arAddCart').addEventListener('click', () => {
     const p = state.arProduct;
     if (!p) return;
@@ -626,11 +856,12 @@ function bindEvents() {
         promo: state.promo,
       });
       state.promo = '';
+      store.setPromo('');
       e.target.reset();
       renderCart();
       refreshStats();
-      toast(`Pesanan ${order.id} berhasil dibuat!`);
-      setTimeout(closeCart, 900);
+      closeCart();
+      showSuccess(order);
     } catch (err) {
       toast(err.message || 'Checkout gagal.', 'error');
     }
@@ -694,6 +925,7 @@ function boot() {
   renderProducts();
   renderCart();
   refreshStats();
+  refreshWishUI();
   bindEvents();
   updateArModeUI();
 
@@ -718,6 +950,15 @@ function boot() {
     closeModal,
     renderCart,
     updateCart,
+    openOrders,
+    renderOrders,
+    setWishOnly,
+    toggleWishlist: (id) => {
+      const result = store.toggleWishlist(id);
+      refreshWishUI();
+      renderProducts();
+      return result;
+    },
     addToCart: (id, opts) => {
       const p = store.getProduct(id);
       return updateCart(addToCart(store.getCart(), p, opts));

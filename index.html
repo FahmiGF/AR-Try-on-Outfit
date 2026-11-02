@@ -36,6 +36,9 @@
       </nav>
 
       <div class="header-actions">
+        <button class="icon-btn nav-toggle" id="navToggle" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="mobileMenu">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
         <label class="search-box" aria-label="Cari produk">
           <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16.5 16.5 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <input type="search" id="searchInput" placeholder="Cari kaos, kemeja, dress…" autocomplete="off" />
@@ -44,11 +47,29 @@
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="12" width="7" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
           <span class="admin-label">Admin</span>
         </a>
+        <button class="icon-btn wish-btn" id="wishButton" aria-label="Lihat favorit" aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.4-7 10-7 10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          <span class="action-label">Favorit</span>
+          <span class="wish-count" id="wishCount" hidden>0</span>
+        </button>
+        <button class="icon-btn orders-btn" id="ordersButton" aria-label="Lihat pesanan saya">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 8h6M9 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="action-label">Pesanan</span>
+        </button>
         <button class="icon-btn cart-btn" id="cartButton" aria-label="Buka keranjang">
           <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 5h2l2.2 10.2a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg>
           <span class="cart-count" id="cartCount">0</span>
         </button>
       </div>
+    </div>
+
+    <div class="mobile-menu" id="mobileMenu" hidden>
+      <a href="#katalog" class="mobile-link">Katalog</a>
+      <a href="#cara-kerja" class="mobile-link">Cara Kerja</a>
+      <a href="#koleksi" class="mobile-link">Koleksi</a>
+      <button class="mobile-link" id="mobileWish" type="button">Favorit saya</button>
+      <button class="mobile-link" id="mobileOrders" type="button">Pesanan saya</button>
+      <a href="admin.html" class="mobile-link">Dashboard admin</a>
     </div>
   </header>
 
@@ -99,6 +120,27 @@
       </div>
     </section>
 
+    <section class="trust-strip" aria-label="Keunggulan Matahari">
+      <div class="trust-inner">
+        <div class="trust-item">
+          <span class="trust-icon">🚚</span>
+          <div><b>Gratis ongkir</b><small>Belanja min. Rp300.000</small></div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">↺</span>
+          <div><b>Tukar ukuran 14 hari</b><small>Tanpa biaya tambahan</small></div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">✦</span>
+          <div><b>Try-on langsung</b><small>Tanpa install aplikasi</small></div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">🔒</span>
+          <div><b>Pembayaran aman</b><small>Data tersimpan lokal</small></div>
+        </div>
+      </div>
+    </section>
+
     <section class="how" id="cara-kerja">
       <div class="section-head">
         <span class="eyebrow"><i></i> Cara Kerja</span>
@@ -138,6 +180,9 @@
       <div class="catalog-toolbar">
         <div class="chips" id="categoryChips" role="tablist" aria-label="Kategori produk"></div>
         <div class="toolbar-right">
+          <button class="chip wish-filter" id="wishFilter" type="button" aria-pressed="false">
+            <span class="heart-glyph">♥</span> Favorit <b id="wishFilterCount">0</b>
+          </button>
           <label class="sort-box">
             <span>Urutkan</span>
             <select id="sortSelect">
@@ -152,9 +197,9 @@
 
       <div class="product-grid" id="productGrid"></div>
       <div class="empty-state" id="emptyState" hidden>
-        <div class="empty-emoji">🔍</div>
-        <h3>Produk tidak ditemukan</h3>
-        <p>Coba kata kunci lain atau pilih kategori “Semua”.</p>
+        <div class="empty-emoji" id="emptyEmoji">🔍</div>
+        <h3 id="emptyTitle">Produk tidak ditemukan</h3>
+        <p id="emptyText">Coba kata kunci lain atau pilih kategori “Semua”.</p>
         <button class="btn btn-ghost" id="resetFilters">Reset filter</button>
       </div>
     </section>
@@ -201,6 +246,9 @@
         <div class="pm-image-wrap" id="pmImageWrap">
           <img id="pmImage" alt="" />
           <span class="pm-badge" id="pmBadge" hidden></span>
+          <button class="pc-wish pm-wish" id="pmWish" type="button" aria-label="Simpan ke favorit" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.4-7 10-7 10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          </button>
         </div>
         <div class="pm-thumbs" id="pmColors"></div>
       </div>
@@ -278,6 +326,11 @@
           <button class="mode-btn" data-mode="mannequin"><span class="mode-dot"></span> Mannequin</button>
         </div>
 
+        <div class="ar-tools">
+          <button class="mini-tool" id="arFlip" type="button">⇄ Ganti kamera</button>
+          <button class="mini-tool" id="arReset" type="button">↺ Reset tampilan</button>
+        </div>
+
         <div class="ar-block">
           <div class="ar-block-head"><span>Warna</span><b id="arColorName"></b></div>
           <div class="swatches" id="arSwatches"></div>
@@ -351,6 +404,44 @@
       <div class="shot-actions">
         <a class="btn btn-primary" id="shotDownload" download="matahari-tryon.png">Unduh foto</a>
         <button class="btn btn-ghost" data-close="shotModal">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customer order history -->
+  <div class="modal orders-modal" id="ordersModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="ordersModal"></div>
+    <div class="modal-card orders-card" role="dialog" aria-modal="true" aria-labelledby="ordersTitle">
+      <button class="modal-close" data-close="ordersModal" aria-label="Tutup">✕</button>
+      <header class="orders-head">
+        <span class="eyebrow"><i></i> Akun demo</span>
+        <h2 id="ordersTitle">Pesanan saya</h2>
+        <p>Status pesanan ini tersinkron dengan dashboard admin di perangkat yang sama.</p>
+      </header>
+      <div class="orders-list" id="ordersList"></div>
+      <div class="orders-empty" id="ordersEmpty" hidden>
+        <div class="empty-emoji">🧾</div>
+        <h3>Belum ada pesanan</h3>
+        <p>Checkout pertamamu akan muncul di sini beserta status pengirimannya.</p>
+        <button class="btn btn-primary" data-close="ordersModal">Mulai belanja</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checkout success -->
+  <div class="modal" id="successModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="successModal"></div>
+    <div class="modal-card success-card" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+      <button class="modal-close" data-close="successModal" aria-label="Tutup">✕</button>
+      <div class="success-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30"><path d="m5 13 4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h3 id="successTitle">Pesanan berhasil dibuat!</h3>
+      <p class="success-copy" id="successCopy">Terima kasih sudah belanja di Matahari.</p>
+      <div class="success-order" id="successOrderId">ORD-0000</div>
+      <div class="success-actions">
+        <button class="btn btn-primary" id="successTrack">Lacak pesanan</button>
+        <button class="btn btn-ghost" data-close="successModal">Lanjut belanja</button>
       </div>
     </div>
   </div>

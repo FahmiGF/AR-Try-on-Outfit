@@ -13,27 +13,32 @@ Virtual fitting room untuk toko pakaian **Matahari**. Pelanggan bisa mencoba pak
 - Filter kategori, pencarian (debounced), dan sorting (terpopuler, harga, rating).
 - Modal produk: galeri warna, ukuran (otomatis menonaktifkan ukuran habis), badge diskon, dan deskripsi.
 - **Rekomendasi ukuran** dari tinggi, berat, lingkar dada, dan preferensi fit (slim/regular/oversize).
+- **Favorit / wishlist**: simpan produk dengan ikon hati, lihat lewat tombol header atau filter khusus di katalog. Tersimpan di perangkat yang sama.
+- **Riwayat pesanan pelanggan**: modal "Pesanan saya" menampilkan status pesanan dengan timeline (Menunggu → Dibayar → Dikirim → Selesai), rincian item, diskon, ongkir, dan tombol beli lagi.
 - **AR try-on**:
   - Kamera via `getUserMedia` + deteksi pose **MediaPipe PoseLandmarker** dari CDN.
   - Pakaian SVG transparan digambar di `<canvas>`, mengikuti lebar bahu, panjang torso, dan kemiringan badan.
   - Kontrol warna, ukuran, skala, geser vertikal, dan opacity.
+  - **Ganti kamera** depan/belakang dan **reset tampilan** sekali klik.
   - **Mode Mannequin** sebagai fallback saat kamera/model tidak tersedia.
   - Screenshot try-on bisa diunduh sebagai PNG.
   - Tidak ada video yang dikirim ke server — semua diproses di perangkat.
-- Keranjang (drawer) dengan tambah/kurang qty, hapus item, dan kode promo:
+- Keranjang (drawer) dengan tambah/kurang qty yang dibatasi stok, hapus item, dan kode promo:
   - `MATAHARI10` — diskon 10%
   - `HEMAT50` — potong Rp50.000
   - `GRATISONGKIR` — gratis ongkir
   - Gratis ongkir otomatis untuk belanja ≥ Rp300.000
-- Checkout membuat pesanan baru, mengurangi stok, dan mengosongkan keranjang.
+- Checkout membuat pesanan baru (total, diskon, dan ongkir dihitung konsisten), mengurangi stok, mengosongkan keranjang, lalu menampilkan modal sukses.
+- Trust strip (gratis ongkir, tukar ukuran, try-on, keamanan), menu navigasi mobile, dan dukungan `prefers-reduced-motion`.
 - Responsif untuk desktop, tablet, dan mobile.
 
 ### Admin (`admin.html`)
 - Login PIN demo: **`2468`** (sesi disimpan di `sessionStorage`).
-- **Ringkasan**: KPI pendapatan, pesanan, sesi try-on, konversi, grafik tren 7 hari, distribusi status pesanan, produk terpopuler, dan stok perlu perhatian.
-- **Produk**: tabel katalog, pencarian & filter kategori, tambah/edit/hapus produk, editor warna, ukuran, dan stok per ukuran.
-- **Pesanan**: daftar pesanan, filter status, dan ubah status (pending → paid → shipped → completed / cancelled).
-- **Try-On**: tren AR vs mannequin, peringkat produk, dan log 20 sesi terakhir.
+- **Ringkasan**: KPI pendapatan, pesanan, sesi try-on, konversi, grafik tren dengan pilihan rentang **7/14/30 hari**, distribusi status pesanan, produk terpopuler, dan stok perlu perhatian.
+- **Produk**: tabel katalog, pencarian & filter kategori, tambah/edit/hapus produk, editor warna, ukuran, dan stok per ukuran, plus **export CSV**.
+- **Pesanan**: daftar pesanan, filter status, **detail pesanan** (pelanggan, item, rincian biaya, ubah status), **export CSV**, dan ubah status cepat dari tabel.
+- **Try-On**: tren AR vs mannequin dengan rentang 7/14/30 hari, peringkat produk, dan log 20 sesi terakhir.
+- Grafik otomatis digambar ulang saat ukuran jendela berubah.
 - Reset data demo dan logout.
 
 ---
@@ -80,12 +85,12 @@ PORT=5000 npm start
 npm test
 ```
 
-51 unit test mencakup katalog & filter, keranjang & promo, rekomendasi ukuran, transformasi pakaian AR, agregasi analitik, generator SVG, dan store/persistensi.
+70 unit test mencakup katalog & filter, keranjang & promo (termasuk pembatasan stok), rekomendasi ukuran, transformasi pakaian AR, agregasi analitik & rentang grafik, generator SVG, helper pesanan, ekspor CSV, serta store/persistensi (termasuk wishlist).
 
 ### Smoke test browser (opsional)
 Proyek ini juga diuji end-to-end lewat Chrome DevTools Protocol:
-- 40 pemeriksaan storefront (render, filter, pencarian, modal, keranjang, promo, checkout, AR, screenshot, kalkulator ukuran).
-- 34 pemeriksaan admin (login, KPI, grafik, CRUD produk, status pesanan, log try-on).
+- 55 pemeriksaan storefront (render, filter, pencarian, modal, keranjang, promo, checkout, modal sukses, riwayat pesanan, wishlist, AR, reset AR, screenshot, menu mobile, kalkulator ukuran).
+- 45 pemeriksaan admin (login, KPI, rentang grafik, CRUD produk, detail & status pesanan, export CSV, resize grafik, log try-on).
 
 ---
 
@@ -105,8 +110,10 @@ Proyek ini juga diuji end-to-end lewat Chrome DevTools Protocol:
 │   ├── catalog.js      # data produk & filter
 │   ├── garments.js     # generator pakaian SVG
 │   ├── sizing.js       # rekomendasi ukuran & transformasi AR
-│   ├── cart.js         # operasi keranjang & promo
-│   ├── analytics.js    # agregasi KPI & tren
+│   ├── cart.js         # operasi keranjang, promo & batas stok
+│   ├── analytics.js    # agregasi KPI & tren (rentang fleksibel)
+│   ├── orders.js       # metadata status, progress & ringkasan pesanan
+│   ├── csv.js          # ekspor CSV pesanan & produk
 │   └── store.js        # localStorage store bersama
 └── tests/              # unit test node:test
 ```
@@ -120,6 +127,7 @@ Semua state disimpan pada key `matahari-ar-tryon:v1`:
 - `products` — 8 produk seed (`mt-001`–`mt-008`), termasuk warna, ukuran, stok.
 - `orders` — 10 pesanan demo (`ORD-1034`–`ORD-1042`), plus pesanan baru dari checkout.
 - `tryons` — riwayat sesi try-on (dipakai analitik admin).
+- `wishlist` — daftar ID produk favorit pelanggan.
 - `cart`, `promo`, `orderSeq`.
 
 Mengubah data di admin langsung terlihat di storefront (satu origin). Tombol **Reset data demo** mengembalikan semuanya ke kondisi awal.

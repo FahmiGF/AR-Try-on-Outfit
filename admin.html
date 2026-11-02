@@ -128,7 +128,14 @@
                   <h2>Aktivitas Try-On</h2>
                   <p>Jumlah sesi virtual fitting room per hari</p>
                 </div>
-                <span class="legend"><i class="dot maroon"></i> Try-on <i class="dot gold"></i> Pesanan</span>
+                <div class="panel-head-tools">
+                  <div class="range-switch" data-range-group="overview" role="group" aria-label="Rentang grafik">
+                    <button type="button" data-range="7" class="active">7H</button>
+                    <button type="button" data-range="14">14H</button>
+                    <button type="button" data-range="30">30H</button>
+                  </div>
+                  <span class="legend"><i class="dot maroon"></i> Try-on <i class="dot gold"></i> Pesanan</span>
+                </div>
               </div>
               <canvas id="tryonChart" height="240"></canvas>
             </article>
@@ -167,7 +174,10 @@
               <h2>Katalog Produk</h2>
               <p id="productSummary">Kelola produk, warna, ukuran, dan stok.</p>
             </div>
-            <button class="btn btn-primary" id="addProductBtn">+ Tambah Produk</button>
+            <div class="view-action-buttons">
+              <button class="btn btn-ghost" id="exportProducts">⤓ Export CSV</button>
+              <button class="btn btn-primary" id="addProductBtn">+ Tambah Produk</button>
+            </div>
           </div>
           <div class="panel table-panel">
             <div class="table-toolbar">
@@ -199,13 +209,16 @@
               <h2>Pesanan</h2>
               <p id="orderSummary">Pantau dan ubah status pesanan pelanggan.</p>
             </div>
-            <div class="filter-chips" id="orderFilters">
-              <button class="filter-chip active" data-status="all">Semua</button>
-              <button class="filter-chip" data-status="pending">Pending</button>
-              <button class="filter-chip" data-status="paid">Dibayar</button>
-              <button class="filter-chip" data-status="shipped">Dikirim</button>
-              <button class="filter-chip" data-status="completed">Selesai</button>
-              <button class="filter-chip" data-status="cancelled">Batal</button>
+            <div class="view-action-buttons">
+              <button class="btn btn-ghost" id="exportOrders">⤓ Export CSV</button>
+              <div class="filter-chips" id="orderFilters">
+                <button class="filter-chip active" data-status="all">Semua</button>
+                <button class="filter-chip" data-status="pending">Pending</button>
+                <button class="filter-chip" data-status="paid">Dibayar</button>
+                <button class="filter-chip" data-status="shipped">Dikirim</button>
+                <button class="filter-chip" data-status="completed">Selesai</button>
+                <button class="filter-chip" data-status="cancelled">Batal</button>
+              </div>
             </div>
           </div>
           <div class="panel table-panel">
@@ -239,7 +252,12 @@
           <div class="grid-1-1">
             <article class="panel">
               <div class="panel-head">
-                <div><h2>Tren 7 Hari</h2><p>Sesi kamera AR vs mannequin</p></div>
+                <div><h2>Tren Try-On</h2><p>Sesi kamera AR vs mannequin</p></div>
+                <div class="range-switch" data-range-group="tryon" role="group" aria-label="Rentang grafik try-on">
+                  <button type="button" data-range="7" class="active">7H</button>
+                  <button type="button" data-range="14">14H</button>
+                  <button type="button" data-range="30">30H</button>
+                </div>
               </div>
               <canvas id="tryonChartLarge" height="260"></canvas>
             </article>
@@ -312,6 +330,21 @@
         <button type="submit" class="btn btn-primary">Simpan produk</button>
       </footer>
     </form>
+  </div>
+
+  <!-- Order detail modal -->
+  <div class="modal" id="orderDetail" aria-hidden="true">
+    <div class="modal-backdrop" data-close="orderDetail"></div>
+    <div class="modal-card detail-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+      <header class="editor-head">
+        <div>
+          <span class="editor-eyebrow">Pesanan</span>
+          <h2 id="detailTitle">Detail pesanan</h2>
+        </div>
+        <button type="button" class="modal-close" data-close="orderDetail" aria-label="Tutup">✕</button>
+      </header>
+      <div class="detail-body" id="orderDetailBody"></div>
+    </div>
   </div>
 
   <div class="toast-stack" id="adminToast"></div>

@@ -96,3 +96,11 @@ test('computeDashboard handles empty data', () => {
   assert.equal(dash.averageOrderValue, 0);
   assert.deepEqual(dash.topProducts, []);
 });
+
+test('computeDashboard accepts a custom chart range', () => {
+  const dash = computeDashboard(products, orders, tryons, NOW, 30);
+  assert.equal(dash.tryOnSeries.length, 30);
+  assert.equal(dash.revenueSeries.length, 30);
+  const tries = dash.tryOnSeries.reduce((sum, s) => sum + s.value, 0);
+  assert.equal(tries, 3);
+});

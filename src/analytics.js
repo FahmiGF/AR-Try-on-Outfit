@@ -62,7 +62,7 @@ export function ordersByStatus(orders) {
   return base;
 }
 
-export function computeDashboard(products, orders, tryons, now = Date.now()) {
+export function computeDashboard(products, orders, tryons, now = Date.now(), days = 7) {
   const safeOrders = orders || [];
   const safeTryons = tryons || [];
   const paidOrders = safeOrders.filter((o) => o.status !== 'cancelled' && o.status !== 'refunded');
@@ -98,8 +98,8 @@ export function computeDashboard(products, orders, tryons, now = Date.now()) {
     averageOrderValue: paidOrders.length ? revenue / paidOrders.length : 0,
     lowStock,
     status: ordersByStatus(safeOrders),
-    tryOnSeries: tryOnSeries(safeTryons, now),
-    revenueSeries: revenueSeries(safeOrders, now),
+    tryOnSeries: tryOnSeries(safeTryons, now, days),
+    revenueSeries: revenueSeries(safeOrders, now, days),
     topProducts: topProducts(products, safeTryons, 5),
   };
 }

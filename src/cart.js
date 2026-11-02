@@ -15,18 +15,31 @@ export function cartKey(productId, size, color) {
   return `${productId}::${size}::${color}`;
 }
 
+function reservedFor(items, productId, size, exceptKey = '') {
+  return items
+    .filter((item) => item.key !== exceptKey && item.productId === productId && item.size === size)
+    .reduce((sum, item) => sum + Number(item.qty || 0), 0);
+}
+
 export function addToCart(cart, product, { size, color, qty = 1 } = {}) {
   const chosenSize = size || Object.keys(product.stock || {})[0] || 'M';
   const chosenColor = color || product.colors?.[0]?.name || 'Default';
+  const available = Number(product.stock?.[chosenSize] ?? 0);
+  if (available <= 0) return cart;
+
   const key = cartKey(product.id, chosenSize, chosenColor);
   const items = Array.isArray(cart.items) ? [...cart.items] : [];
   const existing = items.find((item) => item.key === key);
-  const available = Number(product.stock?.[chosenSize] ?? 0);
-  const nextQty = Math.min(available || 99, (existing?.qty || 0) + Math.max(1, qty));
+  const capacity = available - reservedFor(items, product.id, chosenSize, key);
+  if (capacity <= 0) return cart;
+
+  const addQty = Math.max(1, Number(qty) || 1);
+  const nextQty = Math.min(capacity, (existing?.qty || 0) + addQty);
 
   if (existing) {
     existing.qty = nextQty;
     existing.price = product.price;
+    existing.available = available;
   } else {
     items.push({
       key,
@@ -38,6 +51,7 @@ export function addToCart(cart, product, { size, color, qty = 1 } = {}) {
       color: chosenColor,
       colorHex: product.colors?.find((c) => c.name === chosenColor)?.hex || '#24252a',
       qty: nextQty,
+      available,
     });
   }
 
@@ -50,10 +64,32 @@ export function removeFromCart(cart, key) {
 
 export function setQty(cart, key, qty) {
   if (qty <= 0) return removeFromCart(cart, key);
+
+  const items = cart.items || [];
+  const item = items.find((entry) => entry.key === key);
+  if (!item) return cart;
+
+  // Menurunkan qty selalu boleh. Menaikkan qty dibatasi stok ukuran yang sama
+  // (stok dipakai bersama oleh semua warna pada ukuran tersebut).
+  let nextQty = qty;
+  if (qty > item.qty && Number.isFinite(Number(item.available))) {
+    const capacity = Number(item.available) - reservedFor(items, item.productId, item.size, key);
+    nextQty = Math.min(qty, Math.max(item.qty, capacity));
+  }
+
   return {
     ...cart,
-    items: (cart.items || []).map((item) => (item.key === key ? { ...item, qty } : item)),
+    items: items.map((entry) => (entry.key === key ? { ...entry, qty: nextQty } : entry)),
   };
+}
+
+export function maxQtyFor(cart, key) {
+  const items = cart.items || [];
+  const item = items.find((entry) => entry.key === key);
+  if (!item) return 0;
+  if (!Number.isFinite(Number(item.available))) return Infinity;
+  const capacity = Number(item.available) - reservedFor(items, item.productId, item.size, key);
+  return Math.max(item.qty, capacity);
 }
 
 export function cartSubtotal(cart) {

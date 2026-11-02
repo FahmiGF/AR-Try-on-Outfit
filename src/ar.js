@@ -23,6 +23,8 @@ export class TryOnAR {
 
     this.stream = null;
     this.landmarker = null;
+    this.modelPromise = null;
+    this.facingMode = 'user';
     this.running = false;
     this.raf = null;
     this.mode = 'idle';
@@ -45,6 +47,7 @@ export class TryOnAR {
   }
 
   async start() {
+    if (this.running) return this.mode;
     this.onStatus('Meminta akses kamera…');
     const cameraOk = await this._startCamera();
     if (cameraOk) {
@@ -63,11 +66,12 @@ export class TryOnAR {
     return this.mode;
   }
 
-  async _startCamera() {
+  async _startCamera(facingMode = this.facingMode) {
     if (!navigator?.mediaDevices?.getUserMedia) return false;
     try {
+      this.facingMode = facingMode;
       this.stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
       this.video.srcObject = this.stream;
@@ -85,21 +89,50 @@ export class TryOnAR {
   }
 
   async _loadModel() {
-    try {
-      const vision = await import(/* @vite-ignore */ MEDIAPIPE_BUNDLE);
-      const fileset = await vision.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
-      this.landmarker = await vision.PoseLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: POSE_MODEL, delegate: 'GPU' },
-        runningMode: 'VIDEO',
-        numPoses: 1,
-        minPoseDetectionConfidence: 0.5,
-        minPosePresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
-      this.onStatus('AR aktif — berdiri 1,5–2 m dari kamera.');
-    } catch {
-      this.landmarker = null;
-    }
+    if (this.landmarker) return this.landmarker;
+    if (this.modelPromise) return this.modelPromise;
+
+    this.modelPromise = (async () => {
+      try {
+        const vision = await import(/* @vite-ignore */ MEDIAPIPE_BUNDLE);
+        const fileset = await vision.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
+        this.landmarker = await vision.PoseLandmarker.createFromOptions(fileset, {
+          baseOptions: { modelAssetPath: POSE_MODEL, delegate: 'GPU' },
+          runningMode: 'VIDEO',
+          numPoses: 1,
+          minPoseDetectionConfidence: 0.5,
+          minPosePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+        this.onStatus('AR aktif — berdiri 1,5–2 m dari kamera.');
+      } catch {
+        this.landmarker = null;
+      }
+      return this.landmarker;
+    })();
+
+    return this.modelPromise;
+  }
+
+  /** Ganti kamera depan/belakang. Mengembalikan mode terbaru. */
+  async flipCamera() {
+    if (!this.stream) return this.mode;
+    const next = this.facingMode === 'user' ? 'environment' : 'user';
+    for (const track of this.stream.getTracks()) track.stop();
+    this.stream = null;
+    this.video.srcObject = null;
+    this.lastLandmarks = null;
+    this.lastVideoTime = -1;
+
+    const ok = await this._startCamera(next);
+    this.mode = ok ? 'ar' : 'mannequin';
+    this.onMode(this.mode);
+    this.onStatus(
+      ok
+        ? `Kamera ${next === 'user' ? 'depan' : 'belakang'} aktif — berdiri 1,5–2 m dari kamera.`
+        : 'Kamera tidak tersedia — memakai mode Mannequin.',
+    );
+    return this.mode;
   }
 
   setGarment({ type, colorHex, image } = {}) {
@@ -181,7 +214,12 @@ export class TryOnAR {
     const img = this.garment.image;
     if (img && img.complete !== false) {
       if (this.mode === 'ar' && this.video.readyState >= 2) {
-        const t = computeGarmentTransform(landmarks, { width: w, height: h, type: this.garment.type, padding: this.scale });
+        const t = computeGarmentTransform(landmarks, {
+          width: w,
+          height: h,
+          type: this.garment.type,
+          padding: 1.18 * this.scale,
+        });
         if (t.visible) {
           this._drawGarment(ctx, img, {
             x: w - t.x,
