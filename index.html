@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matahari AR Try-On — Coba dulu, baru jatuh cinta</title>
+  <meta name="description" content="Coba pakaian langsung dari kamera dengan teknologi AR. Katalog Matahari, rekomendasi ukuran, dan checkout cepat." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23c8102e'/%3E%3Cpath d='M32 14v10M32 40v10M14 32h10M40 32h10M19 19l7 7M38 38l7 7M45 19l-7 7M26 38l-7 7' stroke='%23ffd166' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23ffd166'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="announcement">
+    <div class="announcement-track">
+      <span>✦ Gratis ongkir min. Rp300.000</span>
+      <span>✦ Kode <b>MATAHARI10</b> diskon 10%</span>
+      <span>✦ Try-on AR tanpa install aplikasi</span>
+      <span>✦ Gratis ongkir min. Rp300.000</span>
+      <span>✦ Kode <b>MATAHARI10</b> diskon 10%</span>
+      <span>✦ Try-on AR tanpa install aplikasi</span>
+    </div>
+  </div>
+
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
+      <a class="brand" href="#top" aria-label="Matahari beranda">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" width="34" height="34"><rect width="64" height="64" rx="16" fill="#c8102e"/><path d="M32 13v11M32 40v11M13 32h11M40 32h11M19 19l8 8M37 37l8 8M45 19l-8 8M27 37l-8 8" stroke="#ffd166" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="#ffd166"/></svg>
+        </span>
+        <span class="brand-word">matahari<small>AR&nbsp;TRY-ON</small></span>
+      </a>
+
+      <nav class="main-nav" aria-label="Navigasi utama">
+        <a href="#katalog" class="nav-link active">Katalog</a>
+        <a href="#cara-kerja" class="nav-link">Cara Kerja</a>
+        <a href="#koleksi" class="nav-link">Koleksi</a>
+      </nav>
+
+      <div class="header-actions">
+        <label class="search-box" aria-label="Cari produk">
+          <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16.5 16.5 4.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input type="search" id="searchInput" placeholder="Cari kaos, kemeja, dress…" autocomplete="off" />
+        </label>
+        <a class="icon-btn admin-link" href="admin.html" title="Dashboard Admin">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="12" width="7" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+          <span class="admin-label">Admin</span>
+        </a>
+        <button class="icon-btn cart-btn" id="cartButton" aria-label="Buka keranjang">
+          <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 5h2l2.2 10.2a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 2-1.6L21 8H6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg>
+          <span class="cart-count" id="cartCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <span class="eyebrow"><i></i> Augmented Reality Fitting Room</span>
+          <h1>Coba dulu,<br /><em>baru jatuh cinta.</em></h1>
+          <p class="hero-lead">
+            Lihat pakaian Matahari menempel di tubuhmu secara real-time lewat kamera.
+            Tanpa antre, tanpa install aplikasi — cukup satu klik.
+          </p>
+          <div class="hero-cta">
+            <a href="#katalog" class="btn btn-primary">Mulai Try-On <span aria-hidden="true">→</span></a>
+            <a href="#cara-kerja" class="btn btn-ghost">Lihat cara kerja</a>
+          </div>
+          <div class="hero-stats">
+            <div><b id="statProducts">8</b><span>Produk siap AR</span></div>
+            <div><b id="statTries">0</b><span>Try-on hari ini</span></div>
+            <div><b>4.8<small>/5</small></b><span>Rating pembeli</span></div>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="hero-card card-a">
+            <img id="heroGarmentA" alt="" />
+          </div>
+          <div class="hero-card card-b">
+            <img id="heroGarmentB" alt="" />
+          </div>
+          <div class="hero-phone">
+            <div class="phone-notch"></div>
+            <div class="phone-screen">
+              <div class="scan-frame">
+                <span class="corner tl"></span><span class="corner tr"></span>
+                <span class="corner bl"></span><span class="corner br"></span>
+                <img id="heroGarmentC" alt="" />
+                <div class="scan-line"></div>
+              </div>
+              <div class="phone-chip"><i></i> Pose terdeteksi</div>
+            </div>
+          </div>
+          <div class="floating-pill pill-1">✦ Real-time AR</div>
+          <div class="floating-pill pill-2">Fit score 96%</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="how" id="cara-kerja">
+      <div class="section-head">
+        <span class="eyebrow"><i></i> Cara Kerja</span>
+        <h2>Dari kamera ke cermin virtual dalam tiga langkah</h2>
+      </div>
+      <div class="steps">
+        <article class="step">
+          <span class="step-no">01</span>
+          <div class="step-icon">📷</div>
+          <h3>Aktifkan kamera</h3>
+          <p>Izinkan akses kamera. Pose bahu dan pinggulmu dibaca otomatis oleh model pose di browser.</p>
+        </article>
+        <article class="step">
+          <span class="step-no">02</span>
+          <div class="step-icon">👕</div>
+          <h3>Pilih pakaian & warna</h3>
+          <p>Ganti model, warna, dan ukuran. Pakaian menyesuaikan lebar bahu serta panjang torso kamu.</p>
+        </article>
+        <article class="step">
+          <span class="step-no">03</span>
+          <div class="step-icon">🛍️</div>
+          <h3>Simpan & checkout</h3>
+          <p>Ambil screenshot, tambahkan ke keranjang, dan selesaikan pesanan langsung dari halaman ini.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="catalog" id="katalog">
+      <div class="section-head split">
+        <div>
+          <span class="eyebrow"><i></i> Katalog</span>
+          <h2>Koleksi siap dicoba</h2>
+        </div>
+        <p class="section-note">Filter kategori, cari model, lalu tekan <b>Coba AR</b> pada produk mana pun.</p>
+      </div>
+
+      <div class="catalog-toolbar">
+        <div class="chips" id="categoryChips" role="tablist" aria-label="Kategori produk"></div>
+        <div class="toolbar-right">
+          <label class="sort-box">
+            <span>Urutkan</span>
+            <select id="sortSelect">
+              <option value="popular">Terpopuler</option>
+              <option value="price-asc">Harga terendah</option>
+              <option value="price-desc">Harga tertinggi</option>
+              <option value="rating">Rating tertinggi</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="product-grid" id="productGrid"></div>
+      <div class="empty-state" id="emptyState" hidden>
+        <div class="empty-emoji">🔍</div>
+        <h3>Produk tidak ditemukan</h3>
+        <p>Coba kata kunci lain atau pilih kategori “Semua”.</p>
+        <button class="btn btn-ghost" id="resetFilters">Reset filter</button>
+      </div>
+    </section>
+
+    <section class="banner" id="koleksi">
+      <div class="banner-inner">
+        <div>
+          <span class="eyebrow light"><i></i> Matahari Fit Lab</span>
+          <h2>Ukuran tepat, percaya diri penuh.</h2>
+          <p>Masukkan tinggi, berat, dan lingkar dada — kami rekomendasikan ukuran paling pas untukmu.</p>
+        </div>
+        <form class="quick-size" id="quickSizeForm">
+          <label>Tinggi (cm)<input type="number" name="height" min="120" max="210" placeholder="170" /></label>
+          <label>Berat (kg)<input type="number" name="weight" min="30" max="150" placeholder="65" /></label>
+          <label>Lingkar dada (cm)<input type="number" name="chest" min="60" max="140" placeholder="96" /></label>
+          <button class="btn btn-gold" type="submit">Hitung ukuran</button>
+          <div class="quick-size-result" id="quickSizeResult" hidden></div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <span class="brand-word light">matahari</span>
+        <p>Virtual fitting room untuk belanja lebih yakin. Dibuat sebagai prototipe teknologi AR.</p>
+      </div>
+      <div class="footer-cols">
+        <div><h4>Belanja</h4><a href="#katalog">Katalog</a><a href="#katalog">Kemeja</a><a href="#katalog">Hoodie</a></div>
+        <div><h4>Bantuan</h4><a href="#cara-kerja">Cara try-on</a><a href="#cara-kerja">Panduan ukuran</a><a href="admin.html">Dashboard admin</a></div>
+        <div><h4>Demo</h4><span>PIN admin <b>2468</b></span><span>Data tersimpan lokal</span></div>
+      </div>
+    </div>
+    <div class="footer-bottom">© 2026 Matahari AR Try-On · Prototipe internal · Semua data demo.</div>
+  </footer>
+
+  <!-- Product modal -->
+  <div class="modal" id="productModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="productModal"></div>
+    <div class="modal-card product-modal-card" role="dialog" aria-modal="true" aria-labelledby="pmName">
+      <button class="modal-close" data-close="productModal" aria-label="Tutup">✕</button>
+      <div class="pm-media">
+        <div class="pm-image-wrap" id="pmImageWrap">
+          <img id="pmImage" alt="" />
+          <span class="pm-badge" id="pmBadge" hidden></span>
+        </div>
+        <div class="pm-thumbs" id="pmColors"></div>
+      </div>
+      <div class="pm-body">
+        <span class="pm-category" id="pmCategory"></span>
+        <h2 id="pmName"></h2>
+        <div class="pm-rating"><span id="pmStars"></span><b id="pmRating"></b><span id="pmSold"></span></div>
+        <div class="pm-price"><b id="pmPrice"></b><s id="pmOriginal"></s><span class="pm-discount" id="pmDiscount"></span></div>
+        <p class="pm-desc" id="pmDesc"></p>
+
+        <div class="pm-option">
+          <span class="pm-label">Warna: <b id="pmColorName"></b></span>
+          <div class="swatches" id="pmSwatches"></div>
+        </div>
+        <div class="pm-option">
+          <span class="pm-label">Ukuran: <b id="pmSizeName"></b></span>
+          <div class="size-options" id="pmSizes"></div>
+        </div>
+
+        <div class="size-helper">
+          <button type="button" class="size-helper-toggle" id="sizeHelperToggle">📏 Bingung ukuran? Hitung otomatis</button>
+          <form class="size-helper-form" id="sizeHelperForm" hidden>
+            <label>Tinggi<input name="height" type="number" min="120" max="210" placeholder="170" /></label>
+            <label>Berat<input name="weight" type="number" min="30" max="150" placeholder="65" /></label>
+            <label>Dada<input name="chest" type="number" min="60" max="140" placeholder="96" /></label>
+            <label>Fit
+              <select name="fit">
+                <option value="regular">Regular</option>
+                <option value="slim">Slim</option>
+                <option value="oversize">Oversize</option>
+              </select>
+            </label>
+            <button class="btn btn-ghost small" type="submit">Rekomendasikan</button>
+            <p class="size-result" id="sizeHelperResult"></p>
+          </form>
+        </div>
+
+        <div class="pm-actions">
+          <button class="btn btn-primary" id="pmTryOn">Coba AR <span aria-hidden="true">✦</span></button>
+          <button class="btn btn-dark" id="pmAddCart">Tambah ke keranjang</button>
+        </div>
+        <ul class="pm-perks">
+          <li>✓ Pengiriman 1–3 hari kerja</li>
+          <li>✓ Tukar ukuran gratis 14 hari</li>
+          <li>✓ Coba virtual langsung di browser</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- AR modal -->
+  <div class="modal ar-modal" id="arModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="arModal"></div>
+    <div class="ar-shell" role="dialog" aria-modal="true" aria-labelledby="arTitle">
+      <div class="ar-stage">
+        <video id="arVideo" playsinline muted autoplay hidden></video>
+        <canvas id="arCanvas"></canvas>
+        <div class="ar-stage-top">
+          <span class="live-chip" id="arLiveChip"><i></i> <span id="arFps">AR</span></span>
+          <span class="ar-product-chip" id="arProductChip"></span>
+        </div>
+        <div class="ar-tip" id="arTip">Izinkan kamera untuk mencoba pakaian secara langsung.</div>
+        <button class="modal-close on-dark" data-close="arModal" aria-label="Tutup try-on">✕</button>
+      </div>
+
+      <aside class="ar-panel">
+        <div class="ar-panel-head">
+          <span class="eyebrow"><i></i> Virtual Fitting Room</span>
+          <h2 id="arTitle">Coba pakaian</h2>
+          <p id="arStatus">Menyiapkan kamera…</p>
+        </div>
+
+        <div class="ar-mode">
+          <button class="mode-btn active" data-mode="ar"><span class="mode-dot"></span> Kamera AR</button>
+          <button class="mode-btn" data-mode="mannequin"><span class="mode-dot"></span> Mannequin</button>
+        </div>
+
+        <div class="ar-block">
+          <div class="ar-block-head"><span>Warna</span><b id="arColorName"></b></div>
+          <div class="swatches" id="arSwatches"></div>
+        </div>
+
+        <div class="ar-block">
+          <div class="ar-block-head"><span>Ukuran</span><b id="arSizeName"></b></div>
+          <div class="size-options" id="arSizes"></div>
+        </div>
+
+        <div class="ar-block">
+          <label class="range-row"><span>Skala pakaian</span><input type="range" id="arScale" min="0.7" max="1.6" step="0.01" value="1" /><b id="arScaleVal">1.00×</b></label>
+          <label class="range-row"><span>Geser vertikal</span><input type="range" id="arOffset" min="-0.2" max="0.2" step="0.005" value="0" /><b id="arOffsetVal">0%</b></label>
+          <label class="range-row"><span>Opacity</span><input type="range" id="arOpacity" min="0.3" max="1" step="0.01" value="1" /><b id="arOpacityVal">100%</b></label>
+        </div>
+
+        <div class="ar-actions">
+          <button class="btn btn-ghost" id="arShot">Ambil foto</button>
+          <button class="btn btn-primary" id="arAddCart">Tambah ke keranjang</button>
+        </div>
+        <p class="ar-note" id="arNote">Pose diproses di perangkatmu. Tidak ada video yang dikirim ke server.</p>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Cart drawer -->
+  <div class="drawer" id="cartDrawer" aria-hidden="true">
+    <div class="drawer-backdrop" data-close="cartDrawer"></div>
+    <aside class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+      <header class="drawer-head">
+        <div>
+          <span class="eyebrow"><i></i> Keranjang</span>
+          <h2 id="cartTitle">Belanjaanmu</h2>
+        </div>
+        <button class="modal-close" data-close="cartDrawer" aria-label="Tutup keranjang">✕</button>
+      </header>
+      <div class="drawer-body" id="cartItems"></div>
+      <div class="cart-empty" id="cartEmpty" hidden>
+        <div class="empty-emoji">🛒</div>
+        <h3>Keranjang masih kosong</h3>
+        <p>Pilih pakaian favoritmu dan mulai try-on.</p>
+        <button class="btn btn-primary" data-close="cartDrawer">Lihat katalog</button>
+      </div>
+      <div class="drawer-foot" id="cartFoot">
+        <div class="promo-row">
+          <input type="text" id="promoInput" placeholder="Kode promo (MATAHARI10)" />
+          <button class="btn btn-ghost small" id="applyPromo">Pakai</button>
+        </div>
+        <div class="cart-line"><span>Subtotal</span><b id="sumSubtotal">Rp0</b></div>
+        <div class="cart-line" id="discountLine" hidden><span>Diskon</span><b id="sumDiscount">-Rp0</b></div>
+        <div class="cart-line"><span>Ongkir</span><b id="sumShipping">Rp0</b></div>
+        <div class="cart-line total"><span>Total</span><b id="sumTotal">Rp0</b></div>
+        <form class="checkout-form" id="checkoutForm">
+          <div class="field-row">
+            <label>Nama<input name="customer" required placeholder="Nama penerima" /></label>
+            <label>Kota<input name="city" required placeholder="Jakarta" /></label>
+          </div>
+          <button class="btn btn-primary full" type="submit">Checkout sekarang</button>
+        </form>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Screenshot preview -->
+  <div class="modal shot-modal" id="shotModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="shotModal"></div>
+    <div class="shot-card" role="dialog" aria-modal="true">
+      <button class="modal-close" data-close="shotModal" aria-label="Tutup">✕</button>
+      <h3>Hasil try-on</h3>
+      <img id="shotImage" alt="Screenshot try-on" />
+      <div class="shot-actions">
+        <a class="btn btn-primary" id="shotDownload" download="matahari-tryon.png">Unduh foto</a>
+        <button class="btn btn-ghost" data-close="shotModal">Tutup</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

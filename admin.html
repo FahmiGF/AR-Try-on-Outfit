@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matahari Admin — Dashboard</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23c8102e'/%3E%3Cpath d='M32 14v10M32 40v10M14 32h10M40 32h10M19 19l7 7M38 38l7 7M45 19l-7 7M26 38l-7 7' stroke='%23ffd166' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%23ffd166'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <!-- Login -->
+  <div class="login" id="loginScreen">
+    <div class="login-visual">
+      <div class="login-glow"></div>
+      <div class="login-brand">
+        <svg viewBox="0 0 64 64" width="42" height="42"><rect width="64" height="64" rx="16" fill="#c8102e"/><path d="M32 13v11M32 40v11M13 32h11M40 32h11M19 19l8 8M37 37l8 8M45 19l-8 8M27 37l-8 8" stroke="#ffd166" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="#ffd166"/></svg>
+        <span>matahari<small>AR TRY-ON</small></span>
+      </div>
+      <h1>Dashboard<br /><em>penjualan &amp; try-on.</em></h1>
+      <p>Pantau performa katalog, stok, pesanan, dan aktivitas virtual fitting room dalam satu tempat.</p>
+      <div class="login-points">
+        <span>✦ Data real-time dari storefront</span>
+        <span>✦ Kelola produk &amp; stok</span>
+        <span>✦ Analitik try-on 7 hari</span>
+      </div>
+    </div>
+
+    <div class="login-card-wrap">
+      <form class="login-card" id="loginForm">
+        <span class="login-eyebrow">Area Terbatas</span>
+        <h2>Masuk ke dashboard</h2>
+        <p>Masukkan PIN admin untuk melanjutkan.</p>
+        <label class="pin-field">
+          <span>PIN Admin</span>
+          <input id="pinInput" type="password" inputmode="numeric" maxlength="6" placeholder="••••" autocomplete="off" />
+        </label>
+        <button class="btn btn-primary full" type="submit">Buka Dashboard</button>
+        <p class="pin-error" id="pinError" hidden>PIN salah. Coba lagi.</p>
+        <div class="pin-hint">Demo PIN: <b>2468</b></div>
+        <a class="back-link" href="index.html">← Kembali ke storefront</a>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="app" id="dashboard" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="side-brand">
+        <svg viewBox="0 0 64 64" width="34" height="34"><rect width="64" height="64" rx="16" fill="#c8102e"/><path d="M32 13v11M32 40v11M13 32h11M40 32h11M19 19l8 8M37 37l8 8M45 19l-8 8M27 37l-8 8" stroke="#ffd166" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="#ffd166"/></svg>
+        <span class="side-word">matahari<small>ADMIN</small></span>
+      </div>
+
+      <nav class="side-nav" aria-label="Navigasi admin">
+        <span class="side-label">Menu</span>
+        <button class="side-link active" data-view="overview">
+          <span class="side-icon">▦</span> Ringkasan
+        </button>
+        <button class="side-link" data-view="products">
+          <span class="side-icon">👕</span> Produk <b class="side-badge" id="navProductCount">8</b>
+        </button>
+        <button class="side-link" data-view="orders">
+          <span class="side-icon">🧾</span> Pesanan <b class="side-badge warn" id="navOrderCount">0</b>
+        </button>
+        <button class="side-link" data-view="tryon">
+          <span class="side-icon">✦</span> Try-On
+        </button>
+      </nav>
+
+      <div class="side-foot">
+        <div class="side-card">
+          <span>Demo data</span>
+          <p>Semua perubahan tersimpan di perangkat ini.</p>
+          <button class="btn btn-ghost small full" id="resetDemo">Reset data demo</button>
+        </div>
+        <a class="side-back" href="index.html">← Storefront</a>
+        <button class="side-back as-button" id="logoutBtn">Keluar</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+        <div class="topbar-title">
+          <span class="topbar-eyebrow">Matahari Retail Intelligence</span>
+          <h1 id="viewTitle">Ringkasan</h1>
+        </div>
+        <div class="topbar-actions">
+          <span class="date-chip" id="dateChip"></span>
+          <a class="icon-pill" href="index.html" title="Lihat storefront">↗ Storefront</a>
+          <div class="avatar" title="Admin Matahari">MF</div>
+        </div>
+      </header>
+
+      <div class="main-scroll" id="mainScroll">
+        <!-- Overview -->
+        <section class="view active" id="view-overview">
+          <div class="kpi-grid">
+            <article class="kpi">
+              <span class="kpi-label">Total Pendapatan</span>
+              <b class="kpi-value" id="kpiRevenue">Rp0</b>
+              <span class="kpi-sub" id="kpiRevenueSub">Hari ini Rp0</span>
+              <span class="kpi-icon">💰</span>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Pesanan</span>
+              <b class="kpi-value" id="kpiOrders">0</b>
+              <span class="kpi-sub" id="kpiOrdersSub">0 menunggu proses</span>
+              <span class="kpi-icon">🧾</span>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Sesi Try-On</span>
+              <b class="kpi-value" id="kpiTryon">0</b>
+              <span class="kpi-sub" id="kpiTryonSub">0 hari ini</span>
+              <span class="kpi-icon">✦</span>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Konversi Try-On</span>
+              <b class="kpi-value" id="kpiConversion">0%</b>
+              <span class="kpi-sub">Pesanan ÷ sesi try-on</span>
+              <span class="kpi-icon">📈</span>
+            </article>
+          </div>
+
+          <div class="grid-2-1">
+            <article class="panel chart-panel">
+              <div class="panel-head">
+                <div>
+                  <h2>Aktivitas Try-On</h2>
+                  <p>Jumlah sesi virtual fitting room per hari</p>
+                </div>
+                <span class="legend"><i class="dot maroon"></i> Try-on <i class="dot gold"></i> Pesanan</span>
+              </div>
+              <canvas id="tryonChart" height="240"></canvas>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Status Pesanan</h2><p>Distribusi seluruh pesanan</p></div>
+              </div>
+              <div class="status-list" id="statusList"></div>
+            </article>
+          </div>
+
+          <div class="grid-1-1">
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Produk Terpopuler</h2><p>Berdasarkan sesi try-on</p></div>
+                <button class="text-btn" data-goto="tryon">Lihat semua →</button>
+              </div>
+              <div class="top-products" id="topProducts"></div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Stok Perlu Perhatian</h2><p>Stok ukuran ≤ 8 unit</p></div>
+                <button class="text-btn" data-goto="products">Kelola stok →</button>
+              </div>
+              <div class="lowstock" id="lowStockList"></div>
+            </article>
+          </div>
+        </section>
+
+        <!-- Products -->
+        <section class="view" id="view-products">
+          <div class="view-actions">
+            <div class="view-actions-copy">
+              <h2>Katalog Produk</h2>
+              <p id="productSummary">Kelola produk, warna, ukuran, dan stok.</p>
+            </div>
+            <button class="btn btn-primary" id="addProductBtn">+ Tambah Produk</button>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-toolbar">
+              <input type="search" id="productSearch" placeholder="Cari nama produk…" />
+              <select id="productCategoryFilter"></select>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table" id="productsTable">
+                <thead>
+                  <tr>
+                    <th>Produk</th>
+                    <th>Kategori</th>
+                    <th>Harga</th>
+                    <th>Stok</th>
+                    <th>Terjual</th>
+                    <th class="align-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Orders -->
+        <section class="view" id="view-orders">
+          <div class="view-actions">
+            <div class="view-actions-copy">
+              <h2>Pesanan</h2>
+              <p id="orderSummary">Pantau dan ubah status pesanan pelanggan.</p>
+            </div>
+            <div class="filter-chips" id="orderFilters">
+              <button class="filter-chip active" data-status="all">Semua</button>
+              <button class="filter-chip" data-status="pending">Pending</button>
+              <button class="filter-chip" data-status="paid">Dibayar</button>
+              <button class="filter-chip" data-status="shipped">Dikirim</button>
+              <button class="filter-chip" data-status="completed">Selesai</button>
+              <button class="filter-chip" data-status="cancelled">Batal</button>
+            </div>
+          </div>
+          <div class="panel table-panel">
+            <div class="table-wrap">
+              <table class="data-table" id="ordersTable">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Pelanggan</th>
+                    <th>Item</th>
+                    <th>Total</th>
+                    <th>Tanggal</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Try-on -->
+        <section class="view" id="view-tryon">
+          <div class="view-actions">
+            <div class="view-actions-copy">
+              <h2>Analitik Try-On</h2>
+              <p>Performa fitur AR dan minat pelanggan terhadap koleksi.</p>
+            </div>
+          </div>
+
+          <div class="grid-1-1">
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Tren 7 Hari</h2><p>Sesi kamera AR vs mannequin</p></div>
+              </div>
+              <canvas id="tryonChartLarge" height="260"></canvas>
+            </article>
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>Peringkat Produk</h2><p>Produk paling sering dicoba</p></div>
+              </div>
+              <div class="top-products" id="topProductsLarge"></div>
+            </article>
+          </div>
+
+          <div class="panel table-panel">
+            <div class="panel-head">
+              <div><h2>Log Sesi Terbaru</h2><p>20 aktivitas terakhir</p></div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table" id="tryonTable">
+                <thead><tr><th>Waktu</th><th>Produk</th><th>Mode</th><th>ID Sesi</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Product editor modal -->
+  <div class="modal" id="productEditor" aria-hidden="true">
+    <div class="modal-backdrop" data-close="productEditor"></div>
+    <form class="modal-card editor-card" id="productForm" role="dialog" aria-modal="true">
+      <header class="editor-head">
+        <div>
+          <span class="editor-eyebrow">Katalog</span>
+          <h2 id="editorTitle">Tambah produk</h2>
+        </div>
+        <button type="button" class="modal-close" data-close="productEditor" aria-label="Tutup">✕</button>
+      </header>
+      <div class="editor-body">
+        <div class="editor-grid">
+          <label class="field span-2">Nama produk<input name="name" required maxlength="80" /></label>
+          <label class="field">Kategori
+            <select name="category" id="editorCategory"></select>
+          </label>
+          <label class="field">Tipe visual
+            <select name="type" id="editorType"></select>
+          </label>
+          <label class="field">Harga (Rp)<input name="price" type="number" min="0" step="1000" required /></label>
+          <label class="field">Harga asli (Rp)<input name="originalPrice" type="number" min="0" step="1000" /></label>
+          <label class="field">Badge<input name="badge" placeholder="Best Seller / New" maxlength="20" /></label>
+          <label class="field">Rating<input name="rating" type="number" min="0" max="5" step="0.1" /></label>
+          <label class="field span-2">Deskripsi<textarea name="description" rows="2" maxlength="220"></textarea></label>
+          <label class="field span-2">Warna (format <code>Nama:#hex</code> per baris)
+            <textarea name="colors" rows="3" placeholder="Hitam:#24252a&#10;Cream:#efe3cc"></textarea>
+          </label>
+        </div>
+
+        <div class="editor-sub">
+          <div class="editor-sub-head"><h3>Ukuran &amp; stok</h3><span id="editorStockTotal">Total 0 unit</span></div>
+          <div class="stock-editor" id="stockEditor"></div>
+        </div>
+
+        <label class="switch-row">
+          <input type="checkbox" name="ar" checked />
+          <span>Aktifkan fitur AR try-on untuk produk ini</span>
+        </label>
+      </div>
+      <footer class="editor-foot">
+        <button type="button" class="btn btn-ghost" data-close="productEditor">Batal</button>
+        <button type="submit" class="btn btn-primary">Simpan produk</button>
+      </footer>
+    </form>
+  </div>
+
+  <div class="toast-stack" id="adminToast"></div>
+
+  <script type="module" src="src/admin.js"></script>
+</body>
+</html>
